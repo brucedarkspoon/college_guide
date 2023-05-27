@@ -5,6 +5,7 @@ import pydeck as pdk
 import altair as alt
 import yaml
 import os, sys, math
+import college_guide_shared as cgs
 
 ## avoid warning message
 pd.options.mode.chained_assignment = None
@@ -12,24 +13,20 @@ pd.options.mode.chained_assignment = None
 ## Set the default page layout to wide
 st.set_page_config(layout="wide") 
 
-if 'app_name' not in st.session_state:
-    st.session_state['app_name'] = "College Selection Guide"
-
 ## define CheckBoxGroup class to create multiple checkboxes
 class CheckBoxGroup:
-    def __init__(self, name, values, update_func, num_cols=1, component = st):
+    def __init__(self, name, update_func, num_cols=1, component = st):
         self.name = name        ## variable name in the pandas dataframe
-        self.values = values    ## unique values in the pandas dataframe
+        self.values = st.session_state.uniq_vals[name] ## unique values in the pandas dataframe
         self.prefix = "chk_" + name  ## prefix for the session_state variable    
         self.update_func = update_func ## function to call when the checkbox is updated
         cols = component.columns(num_cols)
         self.chk = []
-        num_rows = (len(values) + num_cols - 1) // num_cols
-        for i in range (len(values)):
+        num_rows = (len(self.values) + num_cols - 1) // num_cols
+        for i in range (len(self.values)):
             with cols[i // num_rows]:
-                self.chk.append(st.checkbox(values[i],
+                self.chk.append(st.checkbox(self.values[i],
                     value=True, on_change = update_func, key = self.prefix + '_' + str(i)))
-#        self.chk = [st.checkbox(values[i], value=True, on_change = update_func, key = self.prefix + '_' + str(i)) for i in range(len(values))]
         st.session_state.chk_dict[self.name] = self
 
     ## this function is called inside the update_filter() function to get the selected items
@@ -44,103 +41,7 @@ class CheckBoxGroup:
     ## function to reset everything to default (all checkboxes are selected)
     def reset(self):
         for i in range(len(self.values)):
-            st.session_state['chk_' + self.name + '_' + str(i)] = True
-
-## define color maps for possible values of the categorical variables in the map
-color_maps = {
-    'barrons': {
-        '1 - Elite':            [127, 201, 127, 140],
-        '2 - Highly Selective': [190, 174, 212, 140],
-        '3 - Selective':        [253, 192, 134, 140],
-        '4 - Selective':        [253, 192, 134, 140],
-        '5 - Selective':        [253, 192, 134, 140],
-        '9 - Special':          [255, 255, 153, 140],
-        '999 - Non-selective':  [56, 108, 176, 140],
-    },
-    'iclevel': {
-        '1-year':[100, 255, 100, 140], 
-        '2-year':[255, 100, 100, 140],
-        '4-year':[100, 100, 255, 140],
-    },
-    'public': {
-        'public':[100, 100, 255, 140], 
-        'private':[255, 100, 100, 140]
-    },
-}
-
-qts = { 'par_median' : 'Median Income of Parents at Admission (adjusted)',
-        'k_median' : 'Median Income of Child ~10 years After Graduation (adjusted)',
-        'par_q1' : 'Fraction of Parents with Bottom 20% Income',
-        'par_top1pc' : 'Fraction of Parents with Top 1% Income',
-        'mr_kq5_pq1' : 'Mobility Rate 20% (Parent Bottom 20% -> Child Top 20% Income)',
-        'mr_ktop1_pq1' : 'Mobility Rate 1% (Parent Bottom 20% -> Child Top 1% Income)',
-        'count' : 'Cohort Size',
-        'sat_avg_2013' : 'SAT Average Score in 2013',
-        'sticker_price_2013' : 'Annual Tuition + Fees in 2013',
-        'grad_rate_150_p_2013' : 'Graduation Rate in 150% Time in 2013',
-        'scorecard_netprice_2013' : 'Total Tuition + Fees for Bottom 20% Income in 2013',
-        'scorecard_rej_rate_2013' : 'Fraction of Applicants Rejected in 2013',
-        'trend_parq1' : 'Change in % of Parents in Bottom 20% Income',
-        'trend_bottom40' : 'Change in % of Parents in Bottom 40% Income',
-        'female' : 'Percent of Female Students',
-        'k_married' : 'Percent of Students Married at age ~33',
-        'student__size' : 'Undergrad Enrollment',
-        'admissions__sat_scores__average__overall' : 'SAT Average Score',
-        'admissions__admission_rate__overall' : 'Acceptance Rate',
-        'admissions__act_scores__midpoint__cumulative' : 'ACT Median Score',
-        'cost__tuition__in_state' : 'In-State Tuition',
-        'cost__tuition__out_of_state' : 'Out-of-State Tuition',
-        'school__tuition_revenue_per_fte' : 'Tuition Revenue per Student',
-        'student__demographics__race_ethnicity__white' : 'Percent of White Students',
-        'student__demographics__race_ethnicity__black' : 'Percent of Black Students',
-        'student__demographics__race_ethnicity__hispanic' : 'Percent of Hispanic Students',
-        'student__demographics__race_ethnicity__asian' : 'Percent of Asian Students',
-        'student__demographics__race_ethnicity__non_resident_alien' : 'Percent of International Students',
-        'earnings__10_yrs_after_entry__median' : 'Median Earnings 10 years after Entry',
-        'aid__pell_grant_rate' : 'Percent of Pell Grant Recipients',
-        }
-
-cats = {
-    'tier_name' : 'College Tier',
-    'type' : 'College Type',
-    'public' : 'Public University',
-    'barrons' : "Barron's Selectivity Index",
-    'region' : 'Region',
-    'czname' : 'Commuting Zone',
-    'state' : 'State',
-    'iclevel' : 'Degree Type',
-}
-
-oths = {
-    'name': 'Name of the school',
-    'school__city': 'City of the school',
-    'school__state': 'State of the school',
-    'lon': 'Longitude',
-    'lat': 'Latitude',
-}
-
-
-# Loading the data
-@st.cache_data
-def load_data():    
-    ## Load the wide-formatted data
-    tsvf = "College_Scorecard_Mobility_Latest_NonEmpty.20230524.tsv"
-    df = pd.read_csv(tsvf, sep="\t")
-    df = df.rename({"location.lat": "lat", "location.lon": "lon"}, axis=1)
-
-    df.columns = [x.replace(".", "__") for x in df.columns]
-
-    colnames = list(oths.keys()) + list(cats.keys()) + list(qts.keys())
-    df = df[colnames]
-    color_key = 'public'
-    df['col'] = [color_maps[color_key][x] for x in df[color_key]]
-    df['radius'] = np.sqrt(df['student__size']) * 125
-
-    yamlf = "data.yaml"
-    with open(yamlf, 'r') as file:
-        yaml_data = yaml.safe_load(file)
-    col_dict = yaml_data['dictionary'] 
-    return df, col_dict
+            st.session_state[self.prefix + '_' + str(i)] = True
 
 def update_filter():
     # scan chk_tier_0, ... chk_tier_N to see which values are selected
@@ -150,9 +51,9 @@ def update_filter():
         chk_selected = chk_box_grp.get_selected_list()
         name2selected[name] = chk_selected
 
+    df = st.session_state.df_wide
     ## filter by checkboxes and multiselects first
     df_filt =  df[ (df['region'].isin(name2selected['region'])) &
-#                   (df['tier_name'].isin(name2selected['tier_name'])) &
                     (df['type'].isin(name2selected['type'])) &
                     (df['barrons'].isin(name2selected['barrons'])) &
                     (df['state'].isin(st.session_state.multi_states))]
@@ -185,10 +86,11 @@ def update_reset():
         chk_box_grp.reset()
     update_filter()
 
-def update_map_color_key():
-    color_key = st.session_state.map_color_key
-    st.session_state.df_filt['col'] = [color_maps[color_key][x] for x in st.session_state.df_filt[color_key]]
-    #update_filter()
+def update_map_color_desc():
+    for key in cgs.color_map_desc:
+        if cgs.color_map_desc[key] == st.session_state.map_color_desc:
+            color_key = key #st.session_state.map_color_desc
+    st.session_state.df_filt['col'] = [cgs.color_maps[color_key][x] for x in st.session_state.df_filt[color_key]]
 
 ## create a dictionary that contains name, min, max values for each metric for slider
 slider_dict = {
@@ -211,27 +113,26 @@ slider_dict = {
     'e2_student_size' : ['student__size', 0, 20000],
 } 
 
-df, col_dict = load_data()
+## load data (just once)
+cgs.load_data()
 
-tier_name_unique_values = sorted(list(df['tier_name'].unique()))
-selectivity_unique_values = sorted(list(df['barrons'].unique()))
-type_unique_values = sorted(list(df['type'].unique()))
-state_unique_values = sorted(list(df['state'].unique()))
-region_unique_values = sorted(list(df['region'].unique()))
+if 'uniq_vals' not in st.session_state:
+    uniq_vals = {}
+    uniq_vals_keys = ['tier_name', 'barrons', 'type', 'state', 'region']
+    for key in uniq_vals_keys:
+        uniq_vals[key] = sorted(list(st.session_state.df_wide[key].unique()))
+    st.session_state['uniq_vals'] = uniq_vals
 
 ## Initialize session variables
 ## create an initially filtered data and store in the session.
 if 'df_filt' not in st.session_state:
-    st.session_state['df_filt'] = df #[['id', 'school.name', 'lon', 'lat', 'barrons', 'public', 'student.size']]
-    df_session = st.session_state['df_filt']
-else:
-    df_session = st.session_state['df_filt']
+    st.session_state['df_filt'] = st.session_state.df_wide
 
 if 'chk_dict' not in st.session_state:
     st.session_state.chk_dict = {}
 
 # Title of the application
-st.title(f"{st.session_state.app_name} - Filter")
+st.title(f"{cgs.app_name} - Filter")
 
 # Input to search for a University
 # st.markdown("#### Select or search for a college in the dropdown menu.")
@@ -248,6 +149,8 @@ with col2:
     expander.markdown("* Filtering criteria can be selected below the map")
 
 #st.markdown("*Selected colleges are shown in the map. Hover over to see detailed info. Use the dropdown menu to change the colors.*")
+def foo():
+    print("foo")
 
 expander_map = st.expander(f"Hide/show the map of {st.session_state.df_filt.shape[0]} colleges", expanded=True)
 r = pdk.Deck(
@@ -261,7 +164,7 @@ r = pdk.Deck(
     layers=[
         pdk.Layer(
             'ScatterplotLayer',
-            data = df_session.fillna(""),
+            data = st.session_state.df_filt.fillna(""),
             get_position='[lon, lat]',
             get_fill_color='col',
             get_line_color='[0, 0, 0]',
@@ -275,12 +178,12 @@ r = pdk.Deck(
         'style': {
             'color': 'white'
         }
-    }
+    },
 )
-col1, col2 = expander_map.columns([3, 1])
+col1, col2 = expander_map.columns([2, 1])
 with col2:
-    col2.selectbox('Colors', sorted(color_maps), 
-                 key = 'map_color_key', on_change = update_map_color_key, 
+    col2.selectbox('Colors', [cgs.color_map_desc[x] for x in sorted(cgs.color_maps)], 
+                 key = 'map_color_desc', on_change = update_map_color_desc, 
                  label_visibility='collapsed', index=2)
 expander_map.pydeck_chart(r)
 
@@ -294,28 +197,28 @@ expander_filt.button('Reset All', key = 'reset_all', on_click = update_reset)
 col1, col2, col3 = expander_filt.columns([1, 1, 3])
 with col1:
     col1.markdown("**Region**")
-    chk_region = CheckBoxGroup('region', region_unique_values, update_filter, 1, col1)
+    chk_region = CheckBoxGroup('region', update_filter, 1, col1)
 with col2:
     col2.markdown("**College Type**")
-    chk_type = CheckBoxGroup('type', type_unique_values, update_filter, 1, col2)
+    chk_type = CheckBoxGroup('type', update_filter, 1, col2)
 with col3:
     col3.markdown("**Barron's Selectivity Index**")
-    chk_selectivity = CheckBoxGroup('barrons', selectivity_unique_values, update_filter, 3, col3)
+    chk_selectivity = CheckBoxGroup('barrons', update_filter, 3, col3)
 
 col1, col2, col3 = expander_filt.columns([2, 2, 2],gap="small")
 slider_keys = sorted(slider_dict)
 with col1:
-    multi_states = col1.multiselect("**States**", state_unique_values, default=state_unique_values, key = "multi_states", on_change = update_filter)
+    multi_states = col1.multiselect("**States**", st.session_state.uniq_vals['state'], default=st.session_state.uniq_vals['state'], key = "multi_states", on_change = update_filter)
 with col2:
     for i in range((len(slider_keys)+1)//2):
-        col2.slider(qts[slider_dict[slider_keys[i]][0]], 
+        col2.slider(cgs.qts[slider_dict[slider_keys[i]][0]], 
                     min_value=slider_dict[slider_keys[i]][1], 
                     max_value=slider_dict[slider_keys[i]][2], 
                     value=(slider_dict[slider_keys[i]][1], slider_dict[slider_keys[i]][2]), 
                     key = slider_keys[i], on_change = update_filter)
 with col3:
     for i in range((len(slider_keys)+1)//2,len(slider_keys)):
-        col3.slider(qts[slider_dict[slider_keys[i]][0]], 
+        col3.slider(cgs.qts[slider_dict[slider_keys[i]][0]], 
                     min_value=slider_dict[slider_keys[i]][1], 
                     max_value=slider_dict[slider_keys[i]][2], 
                     value=(slider_dict[slider_keys[i]][1], slider_dict[slider_keys[i]][2]), 
@@ -327,23 +230,22 @@ def foo(widget_instance, payload):
 expander_chart = st.expander(f"Hide/show chart", expanded=True)
 col1, col2, col3 = expander_chart.columns(3)
 with col1:
-    xaxis = col1.selectbox("X-axis", qts.keys(), format_func=lambda x: qts[x], index=0)
+    xaxis = col1.selectbox("X-axis", cgs.qts.keys(), format_func=lambda x: cgs.qts[x], index=0)
 with col2:
-    yaxis = col2.selectbox("Y-axis", qts.keys(), format_func=lambda x: qts[x], index=1)
+    yaxis = col2.selectbox("Y-axis", cgs.qts.keys(), format_func=lambda x: cgs.qts[x], index=1)
 with col3:
-    group = col3.selectbox("Group", cats.keys(), format_func=lambda x: cats[x], index=3)
-chart = alt.Chart(df).mark_circle().encode(
-    x = alt.X(xaxis, axis=alt.Axis(title=qts[xaxis])),
-    y = alt.Y(yaxis, axis=alt.Axis(title=qts[yaxis])),
+    group = col3.selectbox("Group", cgs.cats.keys(), format_func=lambda x: cgs.cats[x], index=3)
+chart = alt.Chart(st.session_state.df_wide).mark_circle().encode(
+    x = alt.X(xaxis, axis=alt.Axis(title=cgs.qts[xaxis])),
+    y = alt.Y(yaxis, axis=alt.Axis(title=cgs.qts[yaxis])),
     opacity = alt.value(0.1),
     color = alt.value("gray"),
     tooltip=[alt.Tooltip('name', title='College Name')])
 df_filt_rename = st.session_state.df_filt
-#df_filt_rename.columns = [x.replace(".", "_") for x in st.session_state.df_filt.columns]
 chart_change = alt.Chart(df_filt_rename).mark_point().encode(
-    x = alt.X(xaxis, axis=alt.Axis(title=qts[xaxis])),
-    y = alt.Y(yaxis, axis=alt.Axis(title=qts[yaxis])),
-    color = alt.Color(group, legend=alt.Legend(title=cats[group])),
+    x = alt.X(xaxis, axis=alt.Axis(title=cgs.qts[xaxis])),
+    y = alt.Y(yaxis, axis=alt.Axis(title=cgs.qts[yaxis])),
+    color = alt.Color(group, legend=alt.Legend(title=cgs.cats[group],labelLimit=500)),
     tooltip = [alt.Tooltip('name', title='College Name'),
                 alt.Tooltip('admissions__sat_scores__average__overall', title='Average SAT'),
                 alt.Tooltip('tier_name', title='College Tier'),
