@@ -14,7 +14,7 @@ pd.options.mode.chained_assignment = None
 st.set_page_config(layout="wide") 
 
 ## load data (just once)
-cgs.load_data()
+df_wide, df_wide_pct, df_tall = cgs.load_data()
 
 ## define CheckBoxGroup class to create multiple checkboxes
 class CheckBoxGroup:
@@ -54,7 +54,7 @@ def update_filter():
         chk_selected = chk_box_grp.get_selected_list()
         name2selected[name] = chk_selected
 
-    df = st.session_state.df_wide
+    df = df_wide #st.session_state.df_wide
     ## filter by checkboxes and multiselects first
     df_filt =  df[ (df['region'].isin(name2selected['region'])) &
                     (df['type'].isin(name2selected['type'])) &
@@ -120,13 +120,14 @@ if 'uniq_vals' not in st.session_state:
     uniq_vals = {}
     uniq_vals_keys = ['tier_name', 'barrons', 'type', 'state', 'region']
     for key in uniq_vals_keys:
-        uniq_vals[key] = sorted(list(st.session_state.df_wide[key].unique()))
+        #uniq_vals[key] = sorted(list(st.session_state.df_wide[key].unique()))
+        uniq_vals[key] = sorted(list(df_wide[key].unique()))
     st.session_state['uniq_vals'] = uniq_vals
 
 ## Initialize session variables
 ## create an initially filtered data and store in the session.
 if 'df_filt' not in st.session_state:
-    st.session_state['df_filt'] = st.session_state.df_wide
+    st.session_state['df_filt'] = df_wide #st.session_state.df_wide
 
 if 'chk_dict' not in st.session_state:
     st.session_state.chk_dict = {}
@@ -235,7 +236,7 @@ with col2:
     yaxis = col2.selectbox("Y-axis", cgs.qts.keys(), format_func=lambda x: cgs.qts[x], index=1)
 with col3:
     group = col3.selectbox("Group", cgs.cats.keys(), format_func=lambda x: cgs.cats[x], index=3)
-chart = alt.Chart(st.session_state.df_wide).mark_circle().encode(
+chart = alt.Chart(df_wide).mark_circle().encode(
     x = alt.X(xaxis, axis=alt.Axis(title=cgs.qts[xaxis])),
     y = alt.Y(yaxis, axis=alt.Axis(title=cgs.qts[yaxis])),
     opacity = alt.value(0.1),

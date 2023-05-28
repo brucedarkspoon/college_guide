@@ -12,13 +12,17 @@ pd.options.mode.chained_assignment = None
 st.set_page_config(layout="wide") # Set the page layout to wide
 
 ## load the data just onces
-cgs.load_data()
+df_wide, df_wide_pct, df_tall = cgs.load_data()
 
 def update_multi_college():
-    indices = st.session_state.df_wide[st.session_state.df_wide['name'].isin(st.session_state.multiselect_college)].index
-    st.session_state.multiselected_wide = st.session_state.df_wide.iloc[indices]
+    indices = df_wide[df_wide['name'].isin(st.session_state.multiselect_college)].index
+    st.session_state.multiselected_wide = df_wide.iloc[indices]
     st.session_state.multiselected_ids = st.session_state.multiselected_wide['id']
-    st.session_state.multiselected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'].isin(st.session_state.multiselected_ids)]
+    st.session_state.multiselected_tall = df_tall[df_tall['INSTID'].isin(st.session_state.multiselected_ids)]
+    #indices = st.session_state.df_wide[st.session_state.df_wide['name'].isin(st.session_state.multiselect_college)].index
+    #st.session_state.multiselected_wide = st.session_state.df_wide.iloc[indices]
+    #st.session_state.multiselected_ids = st.session_state.multiselected_wide['id']
+    #st.session_state.multiselected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'].isin(st.session_state.multiselected_ids)]
     update_metric()
 
 metrics = list(cgs.lts.keys())
@@ -40,7 +44,8 @@ with col2:
     expander.markdown("* Next, select the metric to compare between the colleges.")
     expander.markdown("* Chart will show the comparison between selected colleges on the selected metric.")
 
-multiselect_college = st.multiselect('Select/Enter a University Name', st.session_state.df_wide['name'].unique(), key = 'multiselect_college', on_change = update_multi_college)
+#multiselect_college = st.multiselect('Select/Enter a University Name', st.session_state.df_wide['name'].unique(), key = 'multiselect_college', on_change = update_multi_college)
+multiselect_college = st.multiselect('Select/Enter a University Name', df_wide['name'].unique(), key = 'multiselect_college', on_change = update_multi_college)
 
 st.markdown("#### Select the metric you want to compare between the selected colleges.")
 select_metric = st.selectbox('Select a metric', metric_descs, key = 'select_metric_desc', on_change=update_metric)

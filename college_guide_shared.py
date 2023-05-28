@@ -175,17 +175,17 @@ def load_data():
 
     ## calculate percentiles
     df_wide_pct = df_wide.rank(pct=True) * 100
-    st.session_state['df_wide_pct'] = df_wide_pct
+    #st.session_state['df_wide_pct'] = df_wide_pct
 
     ## add color key
     color_key = 'public'
     df_wide['col'] = [color_maps[color_key][x] for x in df_wide[color_key]]
     df_wide['radius'] = np.sqrt(df_wide['student__size']) * 125
 
-    st.session_state['df_wide'] = df_wide
+    #st.session_state['df_wide'] = df_wide
 
     ## load tall-formatted data
     df_tall = pd.read_csv(tallf, sep="\t", compression='gzip')
     df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011)) | df_tall['INSTID'].isin(ids_to_remove)]
     st.session_state['df_tall'] = df_tall
-    #return df_wide, df_wide_pct, df_tall
+    return df_wide, df_wide_pct, df_tall

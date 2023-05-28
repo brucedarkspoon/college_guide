@@ -11,15 +11,19 @@ pd.options.mode.chained_assignment = None
 st.set_page_config(layout="wide") # Set the page layout to wide
 
 ## load the data just once across the app
-cgs.load_data()
+df_wide, df_wide_pct, df_tall = cgs.load_data()
 
 ## change the session variables when the college is selected
 def update_college():
-    idx = st.session_state.df_wide[st.session_state.df_wide['name'] == st.session_state.select_college].index[0]
-    st.session_state.selected_wide = st.session_state.df_wide.iloc[idx]
-    st.session_state.selected_pct = st.session_state.df_wide_pct.iloc[idx]
+    #idx = st.session_state.df_wide[st.session_state.df_wide['name'] == st.session_state.select_college].index[0]
+    idx = df_wide[df_wide['name'] == st.session_state.select_college].index[0]
+    #st.session_state.selected_wide = st.session_state.df_wide.iloc[idx]
+    #st.session_state.selected_pct = st.session_state.df_wide_pct.iloc[idx]
+    st.session_state.selected_wide = df_wide.iloc[idx]
+    st.session_state.selected_pct = df_wide_pct.iloc[idx]
     st.session_state.selected_id = st.session_state.selected_wide['id']
-    st.session_state.selected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'] == st.session_state.selected_id]
+    st.session_state.selected_tall = df_tall[df_tall['INSTID'] == st.session_state.selected_id]
+    #st.session_state.selected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'] == st.session_state.selected_id]
 
 # Title of the application
 st.title(f"{cgs.app_name} - View")
@@ -35,7 +39,8 @@ with col2:
     expander.markdown("* Or select a college from the dropdown menu.")
     expander.markdown("* Once a college is selected, the information will be displayed below.")
 
-select_college = st.selectbox('Select/Enter a University Name', st.session_state.df_wide['name'].unique(), key = 'select_college', on_change = update_college)
+#select_college = st.selectbox('Select/Enter a University Name', st.session_state.df_wide['name'].unique(), key = 'select_college', on_change = update_college)
+select_college = st.selectbox('Select/Enter a University Name', df_wide['name'].unique(), key = 'select_college', on_change = update_college)
 
 def get_metric_str(df, name, frac2percent=False):
 #    print(df[name],type(df[name]))
