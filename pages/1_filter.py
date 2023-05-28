@@ -54,7 +54,7 @@ def update_filter():
         chk_selected = chk_box_grp.get_selected_list()
         name2selected[name] = chk_selected
 
-    df = df_wide #st.session_state.df_wide
+    df = df_wide 
     ## filter by checkboxes and multiselects first
     df_filt =  df[ (df['region'].isin(name2selected['region'])) &
                     (df['type'].isin(name2selected['type'])) &
@@ -80,7 +80,6 @@ def update_filter():
     st.session_state.df_filt = df_filt
 
 def update_reset():
-    #multi_states = state_unique_values
     for key in slider_dict:
         colname, minval, maxval = slider_dict[key]
         st.session_state[key] = [minval, maxval]
@@ -92,7 +91,7 @@ def update_reset():
 def update_map_color_desc():
     for key in cgs.color_map_desc:
         if cgs.color_map_desc[key] == st.session_state.map_color_desc:
-            color_key = key #st.session_state.map_color_desc
+            color_key = key 
     st.session_state.df_filt['col'] = [cgs.color_maps[color_key][x] for x in st.session_state.df_filt[color_key]]
 
 ## create a dictionary that contains name, min, max values for each metric for slider
@@ -120,7 +119,6 @@ if 'uniq_vals' not in st.session_state:
     uniq_vals = {}
     uniq_vals_keys = ['tier_name', 'barrons', 'type', 'state', 'region']
     for key in uniq_vals_keys:
-        #uniq_vals[key] = sorted(list(st.session_state.df_wide[key].unique()))
         uniq_vals[key] = sorted(list(df_wide[key].unique()))
     st.session_state['uniq_vals'] = uniq_vals
 
@@ -136,8 +134,6 @@ if 'chk_dict' not in st.session_state:
 st.title(f"{cgs.app_name} - Filter")
 
 # Input to search for a University
-# st.markdown("#### Select or search for a college in the dropdown menu.")
-# select_college = st.selectbox('Select/Enter a University Name', st.session_state.df_filt['school.name'].unique(), key = 'select_college', on_change = update_college)
 
 col1, col2 = st.columns([1, 1])
 with col1:
@@ -148,10 +144,6 @@ with col2:
     expander.markdown("* Hover over each circle to see detailed info of each college.")
     expander.markdown("* Use the dropdown menu on the right to change the colors")
     expander.markdown("* Filtering criteria can be selected below the map")
-
-#st.markdown("*Selected colleges are shown in the map. Hover over to see detailed info. Use the dropdown menu to change the colors.*")
-def foo():
-    print("foo")
 
 expander_map = st.expander(f"Hide/show the map of {st.session_state.df_filt.shape[0]} colleges", expanded=True)
 r = pdk.Deck(
@@ -188,9 +180,6 @@ with col2:
                  label_visibility='collapsed', index=2)
 expander_map.pydeck_chart(r)
 
-# sat_scores_slider, sat_scores_chk = make_slider(df, 'Select SAT Scores Range', 'admissions.sat_scores.average.overall')
-# Input to select cost to attend
-# cost_to_attend_slider, cost_to_attend_chk = make_slider(df, 'Select Cost to Attend Range', 'cost.avg_net_price.overall')
 sliders = {}
 
 expander_filt = st.expander(f"Hide/show criteria for filtering {st.session_state.df_filt.shape[0]} colleges", expanded=True)
