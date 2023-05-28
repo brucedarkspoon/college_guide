@@ -13,6 +13,9 @@ pd.options.mode.chained_assignment = None
 ## Set the default page layout to wide
 st.set_page_config(layout="wide") 
 
+## load data (just once)
+cgs.load_data()
+
 ## define CheckBoxGroup class to create multiple checkboxes
 class CheckBoxGroup:
     def __init__(self, name, update_func, num_cols=1, component = st):
@@ -112,9 +115,6 @@ slider_dict = {
     'e1_slider_k_married' : ['k_married', 0, 100],
     'e2_student_size' : ['student__size', 0, 20000],
 } 
-
-## load data (just once)
-cgs.load_data()
 
 if 'uniq_vals' not in st.session_state:
     uniq_vals = {}

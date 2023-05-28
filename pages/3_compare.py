@@ -11,15 +11,15 @@ pd.options.mode.chained_assignment = None
 
 st.set_page_config(layout="wide") # Set the page layout to wide
 
+## load the data just onces
+cgs.load_data()
+
 def update_multi_college():
     indices = st.session_state.df_wide[st.session_state.df_wide['name'].isin(st.session_state.multiselect_college)].index
     st.session_state.multiselected_wide = st.session_state.df_wide.iloc[indices]
     st.session_state.multiselected_ids = st.session_state.multiselected_wide['id']
     st.session_state.multiselected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'].isin(st.session_state.multiselected_ids)]
     update_metric()
-
-## load the data just onces
-cgs.load_data()
 
 metrics = list(cgs.lts.keys())
 metric_descs = list(cgs.lts.values())

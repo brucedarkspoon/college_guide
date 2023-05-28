@@ -155,35 +155,37 @@ oths = {
 # Load all data together
 @st.cache_data
 def load_data():
-    if 'df_wide' not in st.session_state:
-        widef = "College_Scorecard_Mobility_Latest_NonEmpty.20230524.tsv"
-        tallf = "MERGED_1996_2022_ALL_NONEMPTY_TALL.SELECTED_SATCM.tsv.gz"
+    #if 'df_wide' not in st.session_state:
+    widef = "College_Scorecard_Mobility_Latest_NonEmpty.20230524.tsv"
+    tallf = "MERGED_1996_2022_ALL_NONEMPTY_TALL.SELECTED_SATCM.tsv.gz"
 
-        ## load wide-formatted data
-        df_wide = pd.read_csv(widef, sep="\t")
-        ## rename columns in the wide-formatted data
-        df_wide = df_wide.rename({"location.lat": "lat", "location.lon": "lon"}, axis=1)
-        ## rename columns to avoid problems with altair
-        df_wide.columns = [x.replace(".", "__") for x in df_wide.columns]
-        ## subset columns of interest
-        colnames = list(oths.keys()) + list(cats.keys()) + list(qts.keys())
+    ## load wide-formatted data
+    df_wide = pd.read_csv(widef, sep="\t")
+    ## rename columns in the wide-formatted data
+    df_wide = df_wide.rename({"location.lat": "lat", "location.lon": "lon"}, axis=1)
+    ## rename columns to avoid problems with altair
+    df_wide.columns = [x.replace(".", "__") for x in df_wide.columns]
+    ## subset columns of interest
+    colnames = list(oths.keys()) + list(cats.keys()) + list(qts.keys())
 
-        df_wide = df_wide[colnames]
-        ## remove specific colleges that have misleading data
-        ids_to_remove = [183026] ## currently only Southeran New Hampshire University
-        df_wide = df_wide[~df_wide['id'].isin(ids_to_remove)]
+    df_wide = df_wide[colnames]
+    ## remove specific colleges that have misleading data
+    ids_to_remove = [183026] ## currently only Southeran New Hampshire University
+    df_wide = df_wide[~df_wide['id'].isin(ids_to_remove)]
 
-        ## calculate percentiles
-        st.session_state['df_wide_pct'] = df_wide.rank(pct=True) * 100
+    ## calculate percentiles
+    df_wide_pct = df_wide.rank(pct=True) * 100
+    st.session_state['df_wide_pct'] = df_wide_pct
 
-        ## add color key
-        color_key = 'public'
-        df_wide['col'] = [color_maps[color_key][x] for x in df_wide[color_key]]
-        df_wide['radius'] = np.sqrt(df_wide['student__size']) * 125
+    ## add color key
+    color_key = 'public'
+    df_wide['col'] = [color_maps[color_key][x] for x in df_wide[color_key]]
+    df_wide['radius'] = np.sqrt(df_wide['student__size']) * 125
 
-        st.session_state['df_wide'] = df_wide
+    st.session_state['df_wide'] = df_wide
 
-        ## load tall-formatted data
-        df_tall = pd.read_csv(tallf, sep="\t", compression='gzip')
-        df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011)) | df_tall['INSTID'].isin(ids_to_remove)]
-        st.session_state['df_tall'] = df_tall
+    ## load tall-formatted data
+    df_tall = pd.read_csv(tallf, sep="\t", compression='gzip')
+    df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011)) | df_tall['INSTID'].isin(ids_to_remove)]
+    st.session_state['df_tall'] = df_tall
+    #return df_wide, df_wide_pct, df_tall

@@ -10,6 +10,9 @@ pd.options.mode.chained_assignment = None
 
 st.set_page_config(layout="wide") # Set the page layout to wide
 
+## load the data just once across the app
+cgs.load_data()
+
 ## change the session variables when the college is selected
 def update_college():
     idx = st.session_state.df_wide[st.session_state.df_wide['name'] == st.session_state.select_college].index[0]
@@ -17,9 +20,6 @@ def update_college():
     st.session_state.selected_pct = st.session_state.df_wide_pct.iloc[idx]
     st.session_state.selected_id = st.session_state.selected_wide['id']
     st.session_state.selected_tall = st.session_state.df_tall[st.session_state.df_tall['INSTID'] == st.session_state.selected_id]
-
-## load the data just once across the app
-cgs.load_data()
 
 # Title of the application
 st.title(f"{cgs.app_name} - View")
