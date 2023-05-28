@@ -9,6 +9,8 @@ pd.options.mode.chained_assignment = None
 
 st.set_page_config(layout="wide") # Set the page layout to wide
 
+cgs.load_data()
+
 st.subheader(f"Welcome to the {cgs.app_name}!")
 st.markdown(f"#### What is the ***{cgs.app_name}***?")
 st.write(f"The ***{cgs.app_name}*** is a tool for prospective college students in the United States.")
