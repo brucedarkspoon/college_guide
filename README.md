@@ -40,7 +40,7 @@ git clone https://github.com/brucedarkspoon/college_guide.git
 cd college_guide
 
 ## you need python3 installed on your computer
-pip3 install pandas streamlit pydeck 
+pip3 install pandas streamlit pydeck pyyaml
 
 streamlit run app.py
 ```
