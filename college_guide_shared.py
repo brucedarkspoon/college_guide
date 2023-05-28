@@ -169,8 +169,8 @@ def load_data():
 
     df_wide = df_wide[colnames]
     ## remove specific colleges that have misleading data
-    ids_to_remove = [183026] ## currently only Southeran New Hampshire University
-    df_wide = df_wide[~df_wide['id'].isin(ids_to_remove)]
+    # ids_to_remove = [183026] ## currently only Southeran New Hampshire University
+    # df_wide = df_wide[~df_wide['id'].isin(ids_to_remove)]
 
     ## calculate percentiles
     df_wide_pct = df_wide.rank(pct=True) * 100
@@ -182,6 +182,7 @@ def load_data():
 
     ## load tall-formatted data
     df_tall = pd.read_csv(tallf, sep="\t", compression='gzip')
-    df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011)) | df_tall['INSTID'].isin(ids_to_remove)]
+    df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011))]
+    #df_tall = df_tall[~((df_tall['COLUMN'].str.startswith('UGDS_')) & (df_tall['YEAR'] < 2011)) | df_tall['INSTID'].isin(ids_to_remove)]
 
     return df_wide, df_wide_pct, df_tall
